@@ -803,6 +803,13 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
 
     log.info("Bot starting (polling)…")
+    # Python 3.14+ removed implicit event-loop creation, which PTB v21's
+    # run_polling() still relies on (asyncio.get_event_loop). Create + set
+    # one explicitly so polling works on 3.11 -> 3.14.
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
