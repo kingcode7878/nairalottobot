@@ -66,11 +66,35 @@ _sqlite_db_path = os.getenv("SQLITE_PATH", "bot.db")
 
 
 def _pg_dsn():
-    dsn = DATABASE_URL
+    import urllib.parse as _up
+
+    dsn = DATABASE_URL.strip()
     # asyncpg wants postgresql:// ; Neon gives postgresql:// already. Render ok.
     if dsn.startswith("postgres://"):
         dsn = "postgresql://" + dsn[len("postgres://"):]
+    # Neon appends channel_binding=require which asyncpg doesn't understand -> strip it
+    try:
+        parts = _up.urlsplit(dsn)
+        q = _up.parse_qsl(parts.query, keep_blank_values=True)
+        q = [(k, v) for k, v in q if k.lower() != "channel_binding"]
+        dsn = _up.urlunsplit(
+            (parts.scheme, parts.netloc, parts.path, _up.urlencode(q), parts.fragment)
+        )
+    except Exception:
+        pass
     return dsn
+
+
+def _pg_pool_kwargs():
+    kw = {}
+    # Neon requires SSL
+    if "sslmode=require" in DATABASE_URL.lower():
+        kw["ssl"] = "require"
+    # Neon pooled connections (port 6543 / -pooler host) go through pgbouncer:
+    # asyncpg needs statement_cache_size=0 there
+    if "-pooler" in DATABASE_URL or ":6543" in DATABASE_URL:
+        kw["statement_cache_size"] = 0
+    return kw
 
 
 async def db_init():
@@ -78,7 +102,9 @@ async def db_init():
     if USE_POSTGRES:
         import asyncpg
 
-        _pg_pool = await asyncpg.create_pool(_pg_dsn(), min_size=1, max_size=10)
+        _pg_pool = await asyncpg.create_pool(
+            _pg_dsn(), min_size=1, max_size=10, **_pg_pool_kwargs()
+        )
         async with _pg_pool.acquire() as c:
             await c.execute(
                 """CREATE TABLE IF NOT EXISTS users(
