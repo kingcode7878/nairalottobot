@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: telelottobot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: MASTER_ADMINS
+        sync: false
+      - key: MINI_APP_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false

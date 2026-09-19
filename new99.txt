@@ -1,0 +1,50 @@
+i want to create a bot.py that when a user clicks /start on a telegram mini app, it will open a welcome message and a button underneath to open mini app.
+
+
+
+for example, welcome ________ to Naija  with the button underneath saying Play  & Win 10,000 naira
+
+
+
+add /help to list all commands with examples
+
+add /broadcast so i can send broadcast messages with button. emoji supported
+
+add /broadcastnobutton so i can send broadcast messages without button under. it will be text only. emoji supported.
+
+add /setbcbutton to edit the text on the brodcast button. emoji supported.
+
+add /setwelcomebutton to edit the text on the welcome button. emoji supported
+
+add /addadmin to add new admins using telegram unique id number
+
+add /setwelcometext so i can edit the text on the welcome message.
+
+
+
+add /examples so i can see many multiple variation examples of commands
+
+
+
+only master admin or admins can add new admins. i should be able to add multiple master admin using telegram id
+
+
+
+add /stats to view daily, weeekly and monthly users. day stats will count just click on /start button
+
+add /daystats to see the stats of everyone who opened the app during a 24 hours period. this stat is different as it can contain people who have previously preessed the /start button 
+
+
+
+
+
+if user blocked bot, remove from database. users who cleared chat can still get broadcast messages.
+
+
+
+we will use render, github, and neon.tech to do this.. 
+
+we will upload to github using personal access tokens.. [REMOVED - DO NOT COMMIT TOKENS]
+
+show me how 
+
