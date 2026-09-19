@@ -782,6 +782,42 @@ async def post_init(app: Application):
     log.info("Master admins: %s", sorted(MASTER_ADMINS) or "none set")
 
 
+def _start_health_server():
+    """Tiny stdlib HTTP server so Render Web Services see an open port.
+
+    Render sets $PORT (defaults to 10000). Serves 200 OK on / and /health.
+    Runs in a daemon thread; polling continues in the main thread.
+    """
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    port = int(os.getenv("PORT", "10000").strip() or 10000)
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path in ("/", "/health", "/healthz"):
+                body = b"OK"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        def log_message(self, *args):
+            return  # keep Render logs clean
+
+    try:
+        srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+        t = threading.Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        log.info("Health server listening on port %s (/health)", port)
+    except Exception as e:
+        log.warning("Health server failed to start on port %s: %s", port, e)
+
+
 def main():
     if not BOT_TOKEN:
         raise SystemExit("Missing BOT_TOKEN. Copy .env.example to .env and fill it.")
@@ -803,6 +839,7 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
 
     log.info("Bot starting (polling)…")
+    _start_health_server()  # no-op locally, required on Render Web Service
     # Python 3.14+ removed implicit event-loop creation, which PTB v21's
     # run_polling() still relies on (asyncio.get_event_loop). Create + set
     # one explicitly so polling works on 3.11 -> 3.14.
